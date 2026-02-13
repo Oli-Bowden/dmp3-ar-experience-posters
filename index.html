@@ -2,12 +2,12 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>DMP3 AR Experience Posters</title>
+  <title>DMP3 AR Experience</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 
   <!-- A-Frame + MindAR -->
-  https://aframe.io/releases/1.4.2/aframe.min.js</script>
-  https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js</script>
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
     body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
@@ -138,20 +138,34 @@
 
     <a-assets>
       <!-- Poster 1 video -->
-      ./assets/video.mp4</video>
+      <video id="videoAsset"
+             src="./assets/video.mp4"
+             preload="auto"
+             playsinline
+             crossorigin="anonymous"></video>
 
       <!-- Poster 2 model -->
-      ./assets/quantum-model-shaded.glb</a-asset-item>
+      <a-asset-item id="modelAsset"
+                    src="./assets/quantum-model-shaded.glb"
+                    crossorigin="anonymous"></a-asset-item>
 
       <!-- Poster 2 voiceover -->
-      ./assets/quantum-voiceover.mp3</audio>
+      <audio id="voiceAsset"
+             src="./assets/quantum-voiceover.mp3"
+             preload="auto"
+             crossorigin="anonymous"></audio>
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
     <!-- Poster 1 (index 0) -->
     <a-entity mindar-image-target="targetIndex: 0" id="targetP1">
-      #videoAsset</a-video>
+      <a-video id="arVideo"
+               src="#videoAsset"
+               width="1.6"
+               height="0.9"
+               position="0 0 0"
+               visible="false"></a-video>
     </a-entity>
 
     <!-- Poster 2 (index 1) -->
@@ -354,19 +368,30 @@
         modelRig.setAttribute('touch-transform', 'minScale:0.2; maxScale:3; rotateFactor:0.01');
       }
 
-      // Center the model pivot so rotation is from middle, not the base
+      // Gate visibility behind model loading to avoid race with targetFound
+      let modelReady = false;
+      let pendingShowRig = false;
+
+      // Center the model pivot so rotation is from the middle, not the base
       modelEntity.addEventListener('model-loaded', (e) => {
         const THREE = AFRAME.THREE;
         const obj = e.detail.model || modelEntity.getObject3D('mesh');
-        if (!obj) return;
+        if (obj) {
+          const box = new THREE.Box3().setFromObject(obj);
+          const center = new THREE.Vector3();
+          box.getCenter(center);
+          obj.position.sub(center);
+        }
+        modelReady = true;
+        if (pendingShowRig) {
+          modelRig.setAttribute('visible', true);
+          pendingShowRig = false;
+        }
+      });
 
-        // Compute bounding box center
-        const box = new THREE.Box3().setFromObject(obj);
-        const center = new THREE.Vector3();
-        box.getCenter(center);
-
-        // Move the mesh so that its center sits on the rig origin
-        obj.position.sub(center);
+      // Optional: log model errors for debugging
+      modelEntity.addEventListener('model-error', (e) => {
+        console.error('[model] load error', e.detail);
       });
 
       // Track which poster is active
@@ -451,9 +476,13 @@
         // stop P1
         video.pause();
 
-        modelRig.setAttribute('visible', true);
+        if (modelReady) {
+          modelRig.setAttribute('visible', true);
+        } else {
+          pendingShowRig = true;
+        }
 
-        // Capture "first scanned" defaults for reset (each time the target is found)
+        // Capture "first scanned" defaults for reset (after any transforms you may add)
         defaultRigScale = modelRig.object3D.scale.clone();
         defaultRigRot = modelRig.object3D.rotation.clone();
 
@@ -473,6 +502,7 @@
         voice.currentTime = 0;
 
         modelRig.setAttribute('visible', false);
+        pendingShowRig = false; // cancel any pending show
 
         hide(tellCTA); hide(playBtnP2); hide(resetBtnP2); hide(closeBtn);
         active = null;
