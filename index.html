@@ -3,13 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <title>DMP3 AR Experience</title>
+
   <meta name="viewport"
         content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 
-  <!-- ========== FIXED: Proper <script> tags ========== -->
-  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/aframe-environment-component/dist/aframe-environment-component.min.js"></script>
+  <!-- FIXED SCRIPT TAGS -->
+  https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  https://cdn.jsdelivr.net/npm/aframe-environment-component/dist/aframe-environment-component.min.js"></script>
 
   <style>
     body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
@@ -24,8 +25,8 @@
       box-shadow: 0 8px 24px rgba(30,93,248,0.35);
       cursor: pointer; z-index: 1000; user-select: none; pointer-events: auto;
     }
+
     .btn svg { width: 34px; height: 34px; fill: #fff; }
-    .btn:active { transform: scale(0.96); }
 
     .cta-pill {
       position: fixed; left: 50%; transform: translateX(-50%); bottom: 20px;
@@ -35,420 +36,200 @@
       z-index: 1000; cursor: pointer; pointer-events: auto; user-select: none;
     }
 
-    #resetModelBtn_p2, #restartVideoBtn_p1 {
+    #resetModelBtn_p2 {
       position: fixed; top: 20px; left: 20px;
       background: #1e5df8; color: #fff; border-radius: 30px;
       padding: 10px 14px; font-size: 14px; font-weight: 600;
-      box-shadow: 0 8px 24px rgba(30,93,248,0.35);
-      z-index: 1000; cursor: pointer; pointer-events: auto; user-select: none;
+      z-index: 1000;
     }
 
     #closeBtn {
       position: fixed; top: 20px; right: 20px;
       width: 55px; height: 55px; line-height: 55px; text-align: center;
       background: rgba(0,0,0,0.7); color: #fff; border-radius: 50%;
-      font-size: 26px; z-index: 1000; cursor: pointer; pointer-events: auto;
+      font-size: 26px; z-index: 1000;
     }
 
     #audioOverlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.85);
       color: #fff; display: flex; align-items: center; justify-content: center;
-      font-size: 22px; z-index: 2000; cursor: pointer; user-select: none;
-      text-align: center; padding: 24px;
-      pointer-events: auto !important;
+      font-size: 22px; z-index: 2000; text-align: center; padding: 24px;
+      cursor: pointer; pointer-events: auto;
     }
-
-    canvas.a-canvas, .a-canvas { pointer-events: none !important; }
   </style>
 </head>
 
 <body>
 
-  <!-- =================== AR SCENE =================== -->
-  <a-scene
-    mindar-image="imageTargetSrc: ./assets/targets.mind; filterMinCF:0.0001; filterBeta:0.001;"
-    vr-mode-ui="enabled: false"
-    device-orientation-permission-ui="enabled: true">
+<a-scene
+  mindar-image="imageTargetSrc: ./assets/targets.mind"
+  vr-mode-ui="enabled: false"
+  device-orientation-permission-ui="enabled: true">
 
-    <a-assets timeout="45000">
-      <video id="videoAsset" src="./assets/video.mp4" preload="auto" playsinline crossorigin="anonymous"></video>
-      <a-asset-item id="modelAsset" src="./assets/quantum-model-shaded.glb" crossorigin="anonymous"></a-asset-item>
-      <audio id="voiceAsset" src="./assets/quantum-voiceover.mp3" preload="auto" crossorigin="anonymous"></audio>
-    </a-assets>
+  <a-assets timeout="45000">
+    ./assets/video.mp4">…</video>
+    ./assets/quantum-voiceover.mp3">…</audio>
+    ./assets/quantum-model-shaded.glb"></a-asset-item>
+  </a-assets>
 
-    <!-- Lighting -->
-    <a-entity light="type: ambient; intensity: 1.2"></a-entity>
-    <a-entity light="type: directional; intensity: 1.2; position: 0 1 1"></a-entity>
-    <a-entity environment="preset: dawn; lighting: flat; ground: none; grid: none; dressing: none; fog: 0"></a-entity>
+  <a-entity light="type: ambient; intensity: 1.2"></a-entity>
+  <a-entity light="type: directional; intensity: 1.2; position: 0 1 1"></a-entity>
 
-    <a-camera look-controls="enabled: false"></a-camera>
+  <a-camera look-controls="enabled: false"></a-camera>
 
-    <!-- Poster 1 -->
-    <a-entity mindar-image-target="targetIndex: 0" id="targetP1">
-      <a-video id="arVideo" src="#videoAsset" width="1.6" height="0.9" visible="false"></a-video>
-    </a-entity>
-
-    <!-- Poster 2 -->
-    <a-entity mindar-image-target="targetIndex: 1" id="targetP2">
-      <a-entity id="modelRig" position="0 -0.05 0.15" rotation="0 0 0" scale="0.7 0.7 0.7" visible="false">
-        <a-entity id="modelEntity" gltf-model="#modelAsset"></a-entity>
-      </a-entity>
-    </a-entity>
-
-  </a-scene>
-
-  <!-- =================== UI =================== -->
-
-  <div id="playVideoCTA_p1" class="cta-pill hidden">Play video</div>
-  <div id="restartVideoBtn_p1" class="hidden">Restart video</div>
-
-  <div id="togglePlayPauseBtn_p1" class="btn hidden">
-    <svg id="iconPlay_p1" viewBox="0 0 100 100"><polygon points="30,20 80,50 30,80"></polygon></svg>
-    <svg id="iconPause_p1" viewBox="0 0 100 100" style="display:none;">
-      <rect x="25" y="20" width="18" height="60"></rect>
-      <rect x="57" y="20" width="18" height="60"></rect>
-    </svg>
-  </div>
+  <!-- Poster 1 -->
+  <a-entity mindar-image-target="targetIndex: 0" id="targetP1">
+    #videoAsset</a-video>
+  </a-entity>
 
   <!-- Poster 2 -->
-  <div id="tellMeMoreBtn_p2" class="cta-pill hidden">Tell me more</div>
+  <a-entity mindar-image-target="targetIndex: 1" id="targetP2">
+    <a-entity id="modelRig"
+      position="0 -0.05 0"
+      rotation="0 0 0"
+      scale="0.7 0.7 0.7"
+      visible="false">
 
-  <div id="togglePlayPauseBtn_p2" class="btn hidden">
-    <svg id="iconPlay_p2" viewBox="0 0 100 100"><polygon points="30,20 80,50 30,80"></polygon></svg>
-    <svg id="iconPause_p2" viewBox="0 0 100 100" style="display:none;">
-      <rect x="25" y="20" width="18" height="60"></rect>
-      <rect x="57" y="20" width="18" height="60"></rect>
-    </svg>
-  </div>
+      <a-entity id="modelEntity" gltf-model="#modelAsset"></a-entity>
+    </a-entity>
+  </a-entity>
 
-  <div id="resetModelBtn_p2" class="hidden">Reset model</div>
-  <div id="modelLoading_p2" class="cta-pill hidden">Loading model…</div>
-  <div id="retryModel_p2" class="cta-pill hidden">Retry model</div>
+</a-scene>
 
-  <div id="closeBtn" class="hidden">✕</div>
-  <div id="audioOverlay">Tap to Enable Sound</div>
 
-  <!-- =================== FIXED SCRIPT =================== -->
-  <script>
-    /* Touch transform */
-    AFRAME.registerComponent("touch-transform", {
-      schema: { rotateFactor: { default: 0.01 }, minScale: { default: 0.2 }, maxScale: { default: 3 } },
-      init() {
-        this.drag = false;
-        this.pinch = null;
-        this.s = this.el.object3D.scale.x;
-        this.x = 0;
-        this.y = 0;
+<!-- UI -->
+<div id="tellMeMoreBtn_p2" class="cta-pill hidden">Tell me more</div>
+<div id="togglePlayPauseBtn_p2" class="btn hidden">
+  <svg id="iconPlay_p2"><polygon points="30,20 80,50 30,80"></polygon></svg>
+  <svg id="iconPause_p2" style="display:none;">
+    <rect x="25" y="20" width="18" height="60"></rect>
+    <rect x="57" y="20" width="18" height="60"></rect>
+  </svg>
+</div>
 
-        const isUI = t => t && t.closest && t.closest(
-          ".btn, .cta-pill, #audioOverlay, #resetModelBtn_p2, #restartVideoBtn_p1, #closeBtn"
-        );
-        const dist = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+<div id="resetModelBtn_p2" class="hidden">Reset model</div>
+<div id="modelLoading_p2" class="cta-pill hidden">Loading model…</div>
+<div id="retryModel_p2" class="cta-pill hidden">Retry model</div>
 
-        window.addEventListener("touchstart", e => {
-          if (!this.el.object3D.visible || isUI(e.target)) return;
-          if (e.touches.length === 1) {
-            this.drag = true;
-            this.x = e.touches[0].clientX;
-            this.y = e.touches[0].clientY;
-            e.preventDefault();
-          }
-          if (e.touches.length === 2) {
-            this.pinch = dist(e.touches[0], e.touches[1]);
-            this.s = this.el.object3D.scale.x;
-            e.preventDefault();
-          }
-        }, { passive: false });
+<div id="closeBtn" class="hidden">✕</div>
+<div id="audioOverlay">Tap to Enable Sound</div>
 
-        window.addEventListener("touchmove", e => {
-          if (!this.el.object3D.visible || isUI(e.target)) return;
 
-          if (e.touches.length === 2 && this.pinch) {
-            const ratio = dist(e.touches[0], e.touches[1]) / this.pinch;
-            let s = Math.min(Math.max(this.s * ratio, this.data.minScale), this.data.maxScale);
-            this.el.object3D.scale.set(s, s, s);
-            e.preventDefault();
-            return;
-          }
+<!-- Main Script -->
+<script>
+window.onload = () => {
+  const modelRig = document.querySelector("#modelRig");
+  const modelEntity = document.querySelector("#modelEntity");
 
-          if (this.drag && e.touches.length === 1) {
-            const dx = e.touches[0].clientX - this.x;
-            const dy = e.touches[0].clientY - this.y;
-            this.x = e.touches[0].clientX;
-            this.y = e.touches[0].clientY;
+  const targetP2 = document.querySelector("#targetP2");
+  const tellCTA = document.querySelector("#tellMeMoreBtn_p2");
+  const playBtnP2 = document.querySelector("#togglePlayPauseBtn_p2");
+  const resetBtnP2 = document.querySelector("#resetModelBtn_p2");
+  const closeBtn = document.querySelector("#closeBtn");
 
-            const r = this.el.object3D.rotation;
-            r.y += dx * this.data.rotateFactor;
-            r.x += dy * this.data.rotateFactor;
-            r.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, r.x));
-            e.preventDefault();
-          }
-        }, { passive: false });
+  const voice = document.querySelector("#voiceAsset");
 
-        window.addEventListener("touchend", () => {
-          this.drag = false;
-          this.pinch = null;
-        }, { passive: false });
+  let modelReady = false;
+  let pendingShow = false;
+
+  /*-------------------------------------------
+    MODEL LOADED
+  -------------------------------------------*/
+  modelEntity.addEventListener("model-loaded", (e) => {
+    const THREE = AFRAME.THREE;
+    const obj = e.detail.model;
+
+    // Recentre pivot
+    const box = new THREE.Box3().setFromObject(obj);
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    obj.position.sub(center);
+
+    obj.traverse(n => {
+      if (n.isMesh) {
+        n.frustumCulled = false;
       }
     });
 
-    /* Main logic */
-    window.onload = () => {
-      const video = document.querySelector("#videoAsset");
-      const arVideo = document.querySelector("#arVideo");
-      const voice = document.querySelector("#voiceAsset");
+    modelReady = true;
 
-      const modelRig = document.querySelector("#modelRig");
-      const modelEntity = document.querySelector("#modelEntity");
+    if (pendingShow) {
+      modelRig.setAttribute("visible", true);
+      pendingShow = false;
+    }
 
-      const targetP1 = document.querySelector("#targetP1");
-      const targetP2 = document.querySelector("#targetP2");
+    /* --------------------------------------
+       DIAGNOSTIC OVERRIDES (OPTIONAL)
+       Uncomment these lines if model is invisible
+    ----------------------------------------- */
 
-      const playCTA = document.getElementById("playVideoCTA_p1");
-      const playBtnP1 = document.getElementById("togglePlayPauseBtn_p1");
-      const iconPlayP1 = document.getElementById("iconPlay_p1");
-      const iconPauseP1 = document.getElementById("iconPause_p1");
+    // modelRig.setAttribute("visible", true);   // DIAGNOSTIC
+    // modelRig.setAttribute("scale", "2 2 2");  // DIAGNOSTIC
+    // modelRig.setAttribute("position", "0 0 0.1"); // DIAGNOSTIC
 
-      const restartVideoBtn = document.getElementById("restartVideoBtn_p1");
+  });
 
-      const tellCTA = document.getElementById("tellMeMoreBtn_p2");
-      const playBtnP2 = document.getElementById("togglePlayPauseBtn_p2");
-      const iconPlayP2 = document.getElementById("iconPlay_p2");
-      const iconPauseP2 = document.getElementById("iconPause_p2");
+  modelEntity.addEventListener("model-error", (e) => {
+    console.error("[MODEL ERROR]", e.detail);
+  });
 
-      const resetBtnP2 = document.getElementById("resetModelBtn_p2");
-      const closeBtn = document.getElementById("closeBtn");
-      const audioOverlay = document.getElementById("audioOverlay");
 
-      const modelLoading = document.getElementById("modelLoading_p2");
-      const retryModel = document.getElementById("retryModel_p2");
+  /*-------------------------------------------
+    TARGET FOUND (Poster 2)
+  -------------------------------------------*/
+  targetP2.addEventListener("targetFound", () => {
+    if (modelReady) {
+      modelRig.setAttribute("visible", true);
+    } else {
+      pendingShow = true;
+    }
 
-      modelRig.setAttribute("touch-transform", "");
+    tellCTA.classList.remove("hidden");
+    resetBtnP2.classList.remove("hidden");
+    closeBtn.classList.remove("hidden");
+  });
 
-      let modelReady = false;
-      let pendingShow = false;
 
-      let modelLoadTimeoutId = null;
-      const showModelLoading = () => {
-        modelLoading.classList.remove("hidden");
-        retryModel.classList.add("hidden");
-        if (modelLoadTimeoutId) clearTimeout(modelLoadTimeoutId);
+  targetP2.addEventListener("targetLost", () => {
+    modelRig.setAttribute("visible", false);
 
-        modelLoadTimeoutId = setTimeout(() => {
-          modelLoading.classList.add("hidden");
-          retryModel.classList.remove("hidden");
-        }, 10000);
-      };
-      const hideModelLoading = () => {
-        if (modelLoadTimeoutId) clearTimeout(modelLoadTimeoutId);
-        modelLoadTimeoutId = null;
-        modelLoading.classList.add("hidden");
-        retryModel.classList.add("hidden");
-      };
+    tellCTA.classList.add("hidden");
+    playBtnP2.classList.add("hidden");
+    resetBtnP2.classList.add("hidden");
+    closeBtn.classList.add("hidden");
+  });
 
-      modelEntity.addEventListener("model-loaded", e => {
-        const THREE = AFRAME.THREE;
-        const obj = e.detail.model;
 
-        if (obj) {
-          const box = new THREE.Box3().setFromObject(obj);
-          const center = new THREE.Vector3();
-          box.getCenter(center);
-          obj.position.sub(center);
-          obj.visible = true;
-          obj.traverse(n => {
-            if (n.isMesh) {
-              n.frustumCulled = false;
-              if (n.material) {
-                const mats = Array.isArray(n.material) ? n.material : [n.material];
-                mats.forEach(m => {
-                  m.opacity = 1;
-                  m.transparent = false;
-                });
-              }
-            }
-          });
-        }
+  /*-------------------------------------------
+    BUTTONS
+  -------------------------------------------*/
+  tellCTA.addEventListener("click", () => {
+    voice.play();
+    tellCTA.classList.add("hidden");
+    playBtnP2.classList.remove("hidden");
+  });
 
-        modelReady = true;
-        hideModelLoading();
-        if (pendingShow) modelRig.setAttribute("visible", true);
-      });
+  playBtnP2.addEventListener("click", () => {
+    if (voice.paused) voice.play();
+    else voice.pause();
+  });
 
-      modelEntity.addEventListener("model-error", () => {
-        pendingShow = false;
-        modelLoading.classList.add("hidden");
-        retryModel.classList.remove("hidden");
-      });
+  resetBtnP2.addEventListener("click", () => {
+    modelRig.object3D.scale.set(0.7, 0.7, 0.7);
+    modelRig.object3D.rotation.set(0, 0, 0);
+  });
 
-      retryModel.addEventListener("click", () => {
-        retryModel.classList.add("hidden");
-        modelLoading.classList.remove("hidden");
-        modelEntity.setAttribute("gltf-model", "./assets/quantum-model-shaded.glb?v=" + Date.now());
-        modelReady = false;
-        pendingShow = true;
-      });
+  closeBtn.addEventListener("click", () => {
+    voice.pause();
+    modelRig.setAttribute("visible", false);
 
-      const updateVideoIcons = () => {
-        const paused = video.paused;
-        iconPlayP1.style.display = paused ? "block" : "none";
-        iconPauseP1.style.display = paused ? "none" : "block";
-      };
-      const updateVoiceIcons = () => {
-        const paused = voice.paused;
-        iconPlayP2.style.display = paused ? "block" : "none";
-        iconPauseP2.style.display = paused ? "none" : "block";
-      };
-
-      audioOverlay.addEventListener("click", () => {
-        video.muted = false;
-        voice.muted = false;
-        video.play().then(() => video.pause()).catch(() => {});
-        voice.play().then(() => voice.pause()).catch(() => {});
-        audioOverlay.style.display = "none";
-      });
-
-      let active = null;
-      let defaultRigScale = null, defaultRigRot = null;
-
-      /* ----- Poster 1 ----- */
-      targetP1.addEventListener("targetFound", () => {
-        active = "p1";
-        voice.pause();
-        voice.currentTime = 0;
-
-        arVideo.setAttribute("visible", true);
-        playCTA.classList.remove("hidden");
-        playBtnP1.classList.add("hidden");
-
-        restartVideoBtn.classList.remove("hidden");
-        closeBtn.classList.remove("hidden");
-
-        tellCTA.classList.add("hidden");
-        playBtnP2.classList.add("hidden");
-        resetBtnP2.classList.add("hidden");
-        hideModelLoading();
-      });
-
-      targetP1.addEventListener("targetLost", () => {
-        video.pause();
-        arVideo.setAttribute("visible", false);
-        playCTA.classList.add("hidden");
-        playBtnP1.classList.add("hidden");
-        restartVideoBtn.classList.add("hidden");
-        closeBtn.classList.add("hidden");
-        active = null;
-      });
-
-      playCTA.addEventListener("click", () => {
-        video.play().then(() => {
-          playCTA.classList.add("hidden");
-          playBtnP1.classList.remove("hidden");
-          updateVideoIcons();
-        });
-      });
-
-      playBtnP1.addEventListener("click", () => {
-        if (video.paused) video.play();
-        else video.pause();
-        updateVideoIcons();
-      });
-
-      restartVideoBtn.addEventListener("click", () => {
-        video.pause();
-        video.currentTime = 0;
-        video.play();
-        updateVideoIcons();
-      });
-
-      /* ----- Poster 2 ----- */
-      targetP2.addEventListener("targetFound", () => {
-        active = "p2";
-        video.pause();
-
-        if (modelReady) {
-          modelRig.setAttribute("visible", true);
-        } else {
-          pendingShow = true;
-          showModelLoading();
-        }
-
-        defaultRigScale = modelRig.object3D.scale.clone();
-        defaultRigRot = modelRig.object3D.rotation.clone();
-
-        tellCTA.classList.remove("hidden");
-        playBtnP2.classList.add("hidden");
-        resetBtnP2.classList.remove("hidden");
-        closeBtn.classList.remove("hidden");
-
-        playCTA.classList.add("hidden");
-        playBtnP1.classList.add("hidden");
-        restartVideoBtn.classList.add("hidden");
-      });
-
-      targetP2.addEventListener("targetLost", () => {
-        voice.pause();
-        voice.currentTime = 0;
-
-        modelRig.setAttribute("visible", false);
-        pendingShow = false;
-
-        tellCTA.classList.add("hidden");
-        playBtnP2.classList.add("hidden");
-        resetBtnP2.classList.add("hidden");
-        closeBtn.classList.add("hidden");
-
-        hideModelLoading();
-        active = null;
-      });
-
-      tellCTA.addEventListener("click", () => {
-        voice.play().then(() => {
-          tellCTA.classList.add("hidden");
-          playBtnP2.classList.remove("hidden");
-          updateVoiceIcons();
-        });
-      });
-
-      playBtnP2.addEventListener("click", () => {
-        if (voice.paused) voice.play();
-        else voice.pause();
-        updateVoiceIcons();
-      });
-
-      resetBtnP2.addEventListener("click", () => {
-        modelRig.object3D.scale.copy(defaultRigScale);
-        modelRig.object3D.rotation.set(defaultRigRot.x, defaultRigRot.y, defaultRigRot.z);
-      });
-
-      /* FIXED: Proper close button handler */
-      closeBtn.addEventListener("click", () => {
-        if (active === "p1") {
-          video.pause();
-          video.currentTime = 0;
-          arVideo.setAttribute("visible", false);
-          playCTA.classList.add("hidden");
-          playBtnP1.classList.add("hidden");
-          restartVideoBtn.classList.add("hidden");
-        }
-
-        if (active === "p2") {
-          voice.pause();
-          voice.currentTime = 0;
-          modelRig.setAttribute("visible", false);
-          tellCTA.classList.add("hidden");
-          playBtnP2.classList.add("hidden");
-          resetBtnP2.classList.add("hidden");
-        }
-
-        closeBtn.classList.add("hidden");
-        hideModelLoading();
-        active = null;
-      });
-
-    };
-  </script>
+    tellCTA.classList.add("hidden");
+    playBtnP2.classList.add("hidden");
+    resetBtnP2.classList.add("hidden");
+    closeBtn.classList.add("hidden");
+  });
+};
+</script>
 
 </body>
 </html>
-``
