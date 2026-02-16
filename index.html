@@ -6,9 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 
   <!-- A-Frame + MindAR + Environment (HDRI) -->
-  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/aframe-environment-component/dist/aframe-environment-component.min.js"></script>
+  https://aframe.io/releases/1.4.2/aframe.min.js</script>
+  https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js</script>
+  https://cdn.jsdelivr.net/npm/aframe-environment-component/dist/aframe-environment-component.min.js</script>
 
   <style>
     body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
@@ -56,12 +56,17 @@
       padding: 24px;
     }
 
-    @media (max-width: 420px) {
-      .btn { width: 62px; height: 62px; }
-      .btn svg { width: 28px; height: 28px; }
-      #closeBtn { width: 48px; height: 48px; font-size: 22px; line-height: 48px; }
-      .cta-pill { padding: 12px 18px; font-size: 15px; }
-      #resetModelBtn_p2, #restartVideoBtn_p1 { padding: 9px 12px; font-size: 13px; }
+    /* ========================================= */
+    /* FIX: Make "Tap to Enable Sound" clickable */
+    /* ========================================= */
+
+    #audioOverlay {
+      z-index: 999999 !important;
+      pointer-events: auto !important;
+    }
+
+    canvas.a-canvas, .a-canvas {
+      pointer-events: none !important;
     }
   </style>
 </head>
