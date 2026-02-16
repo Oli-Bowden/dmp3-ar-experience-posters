@@ -394,7 +394,6 @@
       modelEntity.addEventListener('model-error', (e) => {
         console.error('[model] load error', e.detail);
         pendingShowModel = false;
-        if (modelLoadTimeoutId) clearTimeout(modelLoadTimeoutId);
         hide(modelLoading);
         show(retryModel);
       });
