@@ -264,7 +264,7 @@
 
       _isOnUI: function (target) {
         // Ignore touches starting on interactive UI elements
-        return target && target.closest && target.closest('.btn, .cta-pill, #closeBtn, #audioO-verlay, #resetModelBtn_p2');
+        return target && target.closest && target.closest('.btn, .cta-pill, #closeBtn, #audioOverlay, #resetModelBtn_p2');
       },
 
       _onTouchStart: function (e) {
@@ -365,7 +365,7 @@
 
       // Apply touch-transform to the RIG (we rotate/scale this)
       if (!modelRig.components['touch-transform']) {
-        modelRig.setAttribute('touch-transform', 'minScale:0.2; maxScale:3; rotateFac-tor:0.01');
+        modelRig.setAttribute('touch-transform', 'minScale:0.2; maxScale:3; rotateFactor:0.01');
       }
 
       // Gate visibility behind model loading to avoid race with targetFound
@@ -557,7 +557,7 @@
 
       // Ensure the transform component is attached (in case of timing differences)
       if (!modelRig.components['touch-transform']) {
-        modelRig.setAttribute('touch-transform', 'minScale:0.2; maxScale:3; rotateFac-tor:0.01');
+        modelRig.setAttribute('touch-transform', 'minScale:0.2; maxScale:3; rotateFactor:0.01');
       }
     };
   </script>
