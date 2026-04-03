@@ -12,6 +12,9 @@
   <style>
     body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
 
+    /* Ensure pinch/drag go to the WebGL canvas, not page zoom/scroll */
+    canvas.a-canvas, .a-canvas { touch-action: none !important; }
+
     /* Blue circular button with white SVG icon (shared by both posters) */
     .btn {
       position: fixed;
@@ -53,11 +56,32 @@
       box-shadow: 0 8px 24px rgba(30, 93, 248, 0.35);
       white-space: nowrap;
       pointer-events: auto;
+      touch-action: manipulation;
+    }
+
+    /* Reset model pill (TOP-LEFT, same styling family) */
+    #resetModelBtn_p2 {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: #1e5df8;
+      color: #fff;
+      border-radius: 30px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 1000;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: 0 8px 24px rgba(30, 93, 248, 0.35);
+      white-space: nowrap;
+      pointer-events: auto;
+      touch-action: manipulation;
     }
 
     .hidden { display: none !important; }
 
-    /* Close button */
+    /* Close button (keep your black transparent style) */
     #closeBtn {
       position: fixed;
       top: 20px;
@@ -73,9 +97,11 @@
       z-index: 1000;
       cursor: pointer;
       pointer-events: auto;
+      user-select: none;
+      touch-action: manipulation;
     }
 
-    /* Audio unlock */
+    /* Audio unlock overlay */
     #audioOverlay {
       position: fixed;
       inset: 0;
@@ -89,6 +115,15 @@
       cursor: pointer;
       pointer-events: auto;
       padding: 24px;
+      text-align: center;
+    }
+
+    @media (max-width: 420px) {
+      .btn { width: 62px; height: 62px; }
+      .btn svg { width: 28px; height: 28px; }
+      #closeBtn { width: 48px; height: 48px; font-size: 22px; line-height: 48px; }
+      .cta-pill { padding: 12px 18px; font-size: 15px; }
+      #resetModelBtn_p2 { padding: 9px 12px; font-size: 13px; }
     }
   </style>
 </head>
@@ -97,30 +132,38 @@
 
   <!-- =================== AR Scene =================== -->
   <a-scene
-    mindar-image="imageTargetSrc: ./assets/targets.mind;"
+    mindar-image="imageTargetSrc: ./assets/targets.mind; filterMinCF: 0.0001; filterBeta: 0.001;"
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: true">
 
     <a-assets>
-      <video id="videoAsset" src="./assets/video.mp4" preload="auto" loop crossorigin="anonymous" playsinline></video>
+      <!-- Poster 1 video -->
+      <video id="videoAsset" src="./assets/video.mp4" preload="auto" crossorigin="anonymous" playsinline></video>
+
+      <!-- Poster 2 model -->
       <a-asset-item id="modelAsset" src="./assets/quantum-model-shaded.glb"></a-asset-item>
-      <audio id="voiceAsset" src="./assets/quantum-voiceover.mp3"></audio>
+
+      <!-- Poster 2 voiceover -->
+      <audio id="voiceAsset" src="./assets/quantum-voiceover.mp3" preload="auto" crossorigin="anonymous"></audio>
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- Poster 1 -->
+    <!-- Poster 1 (index 0) -->
     <a-entity mindar-image-target="targetIndex: 0" id="targetP1">
-      <a-video id="arVideo" src="#videoAsset" width="1.6" height="0.9" visible="false"></a-video>
+      <a-video id="arVideo" src="#videoAsset" width="1.6" height="0.9" position="0 0 0" visible="false"></a-video>
     </a-entity>
 
-    <!-- Poster 2 -->
+    <!-- Poster 2 (index 1) -->
     <a-entity mindar-image-target="targetIndex: 1" id="targetP2">
-      <a-entity id="modelEntity"
-        gltf-model="#modelAsset"
-        scale="0.7 0.7 0.7"
-        rotation="0 0 0"
-        visible="false">
+      <!-- RIG receives user transforms (rotate/scale) -->
+      <a-entity id="modelRig"
+                position="0 -0.05 0"  <!-- lower the model slightly if it feels high; tweak this -->
+                rotation="0 0 0"
+                scale="0.7 0.7 0.7"
+                visible="false">
+        <!-- Child is the actual GLB; we’ll recenter its pivot on model-loaded -->
+        <a-entity id="modelEntity" gltf-model="#modelAsset"></a-entity>
       </a-entity>
     </a-entity>
 
@@ -132,7 +175,7 @@
   <div id="playVideoCTA_p1" class="cta-pill hidden">Play video</div>
 
   <!-- Poster 1 Play/Pause -->
-  <div id="togglePlayPauseBtn_p1" class="btn hidden">
+  <div id="togglePlayPauseBtn_p1" class="btn hidden" role="button" aria-label="Play/Pause video">
     <svg id="iconPlay_p1" viewBox="0 0 100 100">
       <polygon points="30,20 80,50 30,80"></polygon>
     </svg>
@@ -145,8 +188,8 @@
   <!-- Poster 2 CTA -->
   <div id="tellMeMoreBtn_p2" class="cta-pill hidden">Tell me more</div>
 
-  <!-- Poster 2 Play/Pause -->
-  <div id="togglePlayPauseBtn_p2" class="btn hidden">
+  <!-- Poster 2 Play/Pause (voiceover) -->
+  <div id="togglePlayPauseBtn_p2" class="btn hidden" role="button" aria-label="Play/Pause audio">
     <svg id="iconPlay_p2" viewBox="0 0 100 100">
       <polygon points="30,20 80,50 30,80"></polygon>
     </svg>
@@ -156,20 +199,135 @@
     </svg>
   </div>
 
+  <!-- Poster 2 Reset Model (TOP-LEFT) -->
+  <div id="resetModelBtn_p2" class="">Reset model</div>
+
   <!-- Close -->
   <div id="closeBtn" class="hidden">✕</div>
 
   <!-- Audio unlock -->
   <div id="audioOverlay">Tap to Enable Sound</div>
 
+  <!-- =================== INTERACTION SCRIPT =================== -->
   <script>
-    window.onload = () => {
+    // --- Lightweight touch-transform (like your cube demo) applied to modelRig ---
+    // One-finger drag: rotate. Two-finger pinch: scale. Ignores touches on UI.
+    AFRAME.registerComponent('touch-transform', {
+      schema: {
+        rotateFactor: {type: 'number', default: 0.01},
+        minScale:     {type: 'number', default: 0.2},
+        maxScale:     {type: 'number', default: 3.0}
+      },
 
-      // ELEMENTS
+      init: function () {
+        this.isDragging = false;
+        this.prevX = 0;
+        this.prevY = 0;
+
+        this.pinchStartDist = null;
+        const s = this.el.object3D.scale;
+        this.startScale = s.x;
+
+        this._onTouchStart = this._onTouchStart.bind(this);
+        this._onTouchMove  = this._onTouchMove.bind(this);
+        this._onTouchEnd   = this._onTouchEnd.bind(this);
+
+        window.addEventListener('touchstart', this._onTouchStart, {passive: false});
+        window.addEventListener('touchmove',  this._onTouchMove,  {passive: false});
+        window.addEventListener('touchend',   this._onTouchEnd,   {passive: false});
+        window.addEventListener('touchcancel',this._onTouchEnd,   {passive: false});
+      },
+
+      remove: function () {
+        window.removeEventListener('touchstart', this._onTouchStart);
+        window.removeEventListener('touchmove',  this._onTouchMove);
+        window.removeEventListener('touchend',   this._onTouchEnd);
+        window.removeEventListener('touchcancel',this._onTouchEnd);
+      },
+
+      _visible: function () { return this.el.object3D.visible; },
+
+      _isOnUI: function (target) {
+        return target && target.closest && target.closest('.btn, .cta-pill, #closeBtn, #audioOverlay, #resetModelBtn_p2');
+      },
+
+      _onTouchStart: function (e) {
+        if (!this._visible()) return;
+        if (this._isOnUI(e.target)) return;
+
+        if (e.touches.length === 1) {
+          this.isDragging = true;
+          this.prevX = e.touches[0].clientX;
+          this.prevY = e.touches[0].clientY;
+          e.preventDefault();
+        } else if (e.touches.length === 2) {
+          this.pinchStartDist = this._dist(e.touches[0], e.touches[1]);
+          this.startScale = this.el.object3D.scale.x;
+          e.preventDefault();
+        }
+      },
+
+      _onTouchMove: function (e) {
+        if (!this._visible()) return;
+        if (this._isOnUI(e.target)) return;
+
+        if (e.touches.length === 2 && this.pinchStartDist) {
+          const d = this._dist(e.touches[0], e.touches[1]);
+          const ratio = d / this.pinchStartDist;
+          let s = this.startScale * ratio;
+          s = Math.min(Math.max(s, this.data.minScale), this.data.maxScale);
+          this.el.object3D.scale.set(s, s, s);
+          e.preventDefault();
+          return;
+        }
+
+        if (this.isDragging && e.touches.length === 1) {
+          const x = e.touches[0].clientX;
+          const y = e.touches[0].clientY;
+          const dx = x - this.prevX;
+          const dy = y - this.prevY;
+          this.prevX = x;
+          this.prevY = y;
+
+          const rot = this.el.object3D.rotation;
+          rot.y += dx * this.data.rotateFactor;
+          rot.x += dy * this.data.rotateFactor;
+
+          const maxX = Math.PI / 2;
+          const minX = -Math.PI / 2;
+          if (rot.x > maxX) rot.x = maxX;
+          if (rot.x < minX) rot.x = minX;
+
+          e.preventDefault();
+        }
+      },
+
+      _onTouchEnd: function (e) {
+        if (!this._visible()) return;
+        if (e.touches.length < 2) {
+          this.pinchStartDist = null;
+          this.startScale = this.el.object3D.scale.x;
+        }
+        if (e.touches.length === 0) {
+          this.isDragging = false;
+        }
+      },
+
+      _dist: function (t0, t1) {
+        const dx = t0.clientX - t1.clientX;
+        const dy = t0.clientY - t1.clientY;
+        return Math.hypot(dx, dy);
+      }
+    });
+
+    window.onload = () => {
+      // Elements
       const video = document.querySelector('#videoAsset');
       const arVideo = document.querySelector('#arVideo');
       const voice = document.querySelector('#voiceAsset');
-      const model = document.querySelector('#modelEntity');
+
+      const modelRig = document.querySelector('#modelRig');
+      const modelEntity = document.querySelector('#modelEntity');
 
       const targetP1 = document.querySelector('#targetP1');
       const targetP2 = document.querySelector('#targetP2');
@@ -184,9 +342,37 @@
       const iconPlayP2 = document.getElementById('iconPlay_p2');
       const iconPauseP2 = document.getElementById('iconPause_p2');
 
+      const resetBtnP2 = document.getElementById('resetModelBtn_p2');
+
       const closeBtn = document.getElementById('closeBtn');
       const audioOverlay = document.getElementById('audioOverlay');
 
+      // Apply touch-transform to the RIG (we rotate/scale this)
+      if (!modelRig.components['touch-transform']) {
+        modelRig.setAttribute('touch-transform', 'minScale:0.2; maxScale:3; rotateFactor:0.01');
+      }
+
+      // Center the model pivot so rotation is from middle, not the base
+      modelEntity.addEventListener('model-loaded', (e) => {
+        const THREE = AFRAME.THREE;
+        const obj = e.detail.model || modelEntity.getObject3D('mesh');
+        if (!obj) return;
+
+        // Compute bounding box center and size
+        const box = new THREE.Box3().setFromObject(obj);
+        const center = new THREE.Vector3();
+        const size = new THREE.Vector3();
+        box.getCenter(center);
+        box.getSize(size);
+
+        // Move the mesh so that its center sits on the rig origin
+        obj.position.sub(center);
+
+        // Optional: adjust rig slightly if needed (already set -0.05 Y in markup)
+        // modelRig.object3D.position.y = -0.05; // tweak live if needed
+      });
+
+      // Track which poster is active
       let active = null;
 
       // Helpers
@@ -205,36 +391,36 @@
         iconPauseP2.style.display = paused ? 'none' : 'block';
       }
 
-      // AUDIO UNLOCK
+      // Audio unlock (tap once)
       audioOverlay.addEventListener('click', () => {
         video.muted = false;
         voice.muted = false;
-
-        video.play().then(() => video.pause());
-        voice.play().then(() => voice.pause());
-
+        // Prime media without making sound
+        video.play().then(() => video.pause()).catch(()=>{});
+        voice.play().then(() => voice.pause()).catch(()=>{});
         audioOverlay.style.display = 'none';
       });
 
-      // POSTER 1
+      // ===================== Poster 1 (Video) =====================
       targetP1.addEventListener('targetFound', () => {
         active = 'p1';
+        // stop P2
         voice.pause();
         voice.currentTime = 0;
 
-        arVideo.object3D.visible = true;
+        arVideo.setAttribute('visible', true);
 
         show(playCTA);
         hide(playBtnP1);
-        show(closeBtn);
 
-        hide(tellCTA);
-        hide(playBtnP2);
+        show(closeBtn);
+        hide(tellCTA); hide(playBtnP2); // leave reset out on P1
+        hide(resetBtnP2);
       });
 
       targetP1.addEventListener('targetLost', () => {
         video.pause();
-        arVideo.object3D.visible = false;
+        arVideo.setAttribute('visible', false);
 
         hide(playCTA);
         hide(playBtnP1);
@@ -243,89 +429,104 @@
         active = null;
       });
 
+      // P1: CTA → play
       playCTA.addEventListener('click', () => {
-        video.play();
-        hide(playCTA);
-        show(playBtnP1);
-        updateP1();
+        video.play().then(() => {
+          hide(playCTA);
+          show(playBtnP1);
+          updateP1();
+        }).catch(()=>{});
       });
 
+      // P1: play/pause
       playBtnP1.addEventListener('click', () => {
-        if (video.paused) video.play(); else video.pause();
+        if (video.paused) video.play().catch(()=>{}); else video.pause();
         updateP1();
       });
 
-      // POSTER 2
+      // ===================== Poster 2 (Model + Voiceover) =====================
       targetP2.addEventListener('targetFound', () => {
         active = 'p2';
+        // stop P1
         video.pause();
 
-        model.setAttribute('visible', true);
+        modelRig.setAttribute('visible', true);
 
+        // Show CTA; hide play/pause until user opts in
         show(tellCTA);
         hide(playBtnP2);
-        show(closeBtn);
 
-        hide(playCTA);
-        hide(playBtnP1);
+        // Show Reset Model (now TOP-LEFT)
+        show(resetBtnP2);
+
+        show(closeBtn);
+        hide(playCTA); hide(playBtnP1);
       });
 
       targetP2.addEventListener('targetLost', () => {
         voice.pause();
         voice.currentTime = 0;
 
-        model.setAttribute('visible', false);
+        modelRig.setAttribute('visible', false);
 
-        hide(tellCTA);
-        hide(playBtnP2);
-        hide(closeBtn);
-
+        hide(tellCTA); hide(playBtnP2); hide(resetBtnP2); hide(closeBtn);
         active = null;
       });
 
+      // P2: Tell me more → play voiceover
       tellCTA.addEventListener('click', () => {
-        voice.play();
-        hide(tellCTA);
-        show(playBtnP2);
-        updateP2();
+        voice.play().then(() => {
+          hide(tellCTA);
+          show(playBtnP2);
+          updateP2();
+        }).catch(()=>{});
       });
 
+      // P2: play/pause voiceover
       playBtnP2.addEventListener('click', () => {
-        if (voice.paused) voice.play(); else voice.pause();
+        if (voice.paused) voice.play().catch(()=>{}); else voice.pause();
         updateP2();
       });
 
-      // CLOSE
+      // P2: Reset model (resets RIG transforms)
+      const defaultRigScale = modelRig.object3D.scale.clone();
+      const defaultRigRot = modelRig.object3D.rotation.clone();
+
+      resetBtnP2.addEventListener('click', () => {
+        modelRig.object3D.scale.copy(defaultRigScale);
+        modelRig.object3D.rotation.set(defaultRigRot.x, defaultRigRot.y, defaultRigRot.z);
+      });
+
+      // Close (context-aware)
       closeBtn.addEventListener('click', () => {
         if (active === 'p1') {
           video.pause();
           video.currentTime = 0;
-          arVideo.object3D.visible = false;
-          hide(playCTA);
-          hide(playBtnP1);
+          arVideo.setAttribute('visible', false);
+          hide(playCTA); hide(playBtnP1);
         }
-
         if (active === 'p2') {
           voice.pause();
           voice.currentTime = 0;
-          model.setAttribute('visible', false);
-          hide(tellCTA);
-          hide(playBtnP2);
+          modelRig.setAttribute('visible', false);
+          hide(tellCTA); hide(playBtnP2); hide(resetBtnP2);
         }
-
         hide(closeBtn);
         active = null;
       });
 
-      hide(playCTA);
-      hide(playBtnP1);
-      hide(playBtnP2);
-      hide(tellCTA);
-      hide(closeBtn);
+      // Init UI state
+      hide(playCTA); hide(playBtnP1);
+      hide(playBtnP2); hide(tellCTA); hide(closeBtn);
+      // IMPORTANT: we want reset to be hidden by default until Poster 2 is active
+      hide(resetBtnP2);
 
-      updateP1();
-      updateP2();
+      updateP1(); updateP2();
 
+      // Attach the transform component (in case DOMContentLoaded timing differs)
+      if (!modelRig.components['touch-transform']) {
+        modelRig.setAttribute('touch-transform', 'minScale:0.2; maxScale:3; rotateFactor:0.01');
+      }
     };
   </script>
 
