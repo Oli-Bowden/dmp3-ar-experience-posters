@@ -8,6 +8,8 @@
   <!-- A-Frame + MindAR -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  <!-- HDRI / Environment component for PBR reflections -->
+  <script src="https://cdn.jsdelivr.net/npm/aframe-environment-component/dist/aframe-environment-component.min.js"></script>
 
   <style>
     body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
@@ -144,9 +146,12 @@
              crossorigin="anonymous"></audio>
     </a-assets>
 
-    <!-- ⭐ BASIC LIGHTING -->
+    <!-- Basic lights (kept) -->
     <a-entity light="type: ambient; intensity: 1.2"></a-entity>
     <a-entity light="type: directional; intensity: 1.2; position: 0 1 1"></a-entity>
+
+    <!-- HDRI-style environment for PBR reflections (no ground/grid in AR) -->
+    <a-entity environment="preset: dawn; lighting: flat; ground: none; playArea: 0; fog: 0; grid: none; dressing: none"></a-entity>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
