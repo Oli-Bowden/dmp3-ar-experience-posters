@@ -12,7 +12,7 @@
   <style>
     body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
 
-    /* 🔑 Critical so pinch/drag reach the canvas, not page zoom/scroll */
+    /* Ensure pinch/drag go to the WebGL canvas, not page zoom/scroll */
     canvas.a-canvas, .a-canvas { touch-action: none !important; }
 
     /* Blue circular button with white SVG icon (shared by both posters) */
@@ -59,16 +59,16 @@
       touch-action: manipulation;
     }
 
-    /* Reset model pill (bottom-right, same style) */
+    /* Reset model pill (TOP-LEFT, same styling family) */
     #resetModelBtn_p2 {
       position: fixed;
-      right: 20px;
-      bottom: 20px;
+      top: 20px;
+      left: 20px;
       background: #1e5df8;
       color: #fff;
       border-radius: 30px;
-      padding: 14px 18px;
-      font-size: 15px;
+      padding: 10px 14px;
+      font-size: 14px;
       font-weight: 600;
       z-index: 1000;
       cursor: pointer;
@@ -81,7 +81,7 @@
 
     .hidden { display: none !important; }
 
-    /* Close button */
+    /* Close button (keep your black transparent style) */
     #closeBtn {
       position: fixed;
       top: 20px;
@@ -101,7 +101,7 @@
       touch-action: manipulation;
     }
 
-    /* Audio unlock */
+    /* Audio unlock overlay */
     #audioOverlay {
       position: fixed;
       inset: 0;
@@ -123,7 +123,7 @@
       .btn svg { width: 28px; height: 28px; }
       #closeBtn { width: 48px; height: 48px; font-size: 22px; line-height: 48px; }
       .cta-pill { padding: 12px 18px; font-size: 15px; }
-      #resetModelBtn_p2 { padding: 12px 16px; font-size: 14px; }
+      #resetModelBtn_p2 { padding: 9px 12px; font-size: 13px; }
     }
   </style>
 </head>
@@ -138,40 +138,33 @@
 
     <a-assets>
       <!-- Poster 1 video -->
-      <video id="videoAsset"
-             src="./assets/video.mp4"
-             preload="auto"
-             loop
-             playsinline
-             crossorigin="anonymous"></video>
+      <video id="videoAsset" src="./assets/video.mp4" preload="auto" crossorigin="anonymous" playsinline></video>
 
       <!-- Poster 2 model -->
       <a-asset-item id="modelAsset" src="./assets/quantum-model-shaded.glb"></a-asset-item>
 
       <!-- Poster 2 voiceover -->
-      <audio id="voiceAsset" src="./assets/quantum-voiceover.mp3" preload="auto"></audio>
+      <audio id="voiceAsset" src="./assets/quantum-voiceover.mp3" preload="auto" crossorigin="anonymous"></audio>
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
     <!-- Poster 1 (index 0) -->
     <a-entity mindar-image-target="targetIndex: 0" id="targetP1">
-      <a-video id="arVideo"
-               src="#videoAsset"
-               width="1.6"
-               height="0.9"
-               position="0 0 0"
-               visible="false"></a-video>
+      <a-video id="arVideo" src="#videoAsset" width="1.6" height="0.9" position="0 0 0" visible="false"></a-video>
     </a-entity>
 
     <!-- Poster 2 (index 1) -->
     <a-entity mindar-image-target="targetIndex: 1" id="targetP2">
-      <a-entity id="modelEntity"
-                gltf-model="#modelAsset"
-                scale="0.7 0.7 0.7"
+      <!-- RIG receives user transforms (rotate/scale) -->
+      <a-entity id="modelRig"
+                position="0 -0.05 0"  <!-- lower the model slightly if it feels high; tweak this -->
                 rotation="0 0 0"
-                position="0 0 0"
-                visible="false"></a-entity>
+                scale="0.7 0.7 0.7"
+                visible="false">
+        <!-- Child is the actual GLB; we’ll recenter its pivot on model-loaded -->
+        <a-entity id="modelEntity" gltf-model="#modelAsset"></a-entity>
+      </a-entity>
     </a-entity>
 
   </a-scene>
@@ -206,8 +199,8 @@
     </svg>
   </div>
 
-  <!-- Poster 2 Reset Model (bottom-right) -->
-  <div id="resetModelBtn_p2" class="hidden">Reset model</div>
+  <!-- Poster 2 Reset Model (TOP-LEFT) -->
+  <div id="resetModelBtn_p2" class="">Reset model</div>
 
   <!-- Close -->
   <div id="closeBtn" class="hidden">✕</div>
@@ -217,8 +210,8 @@
 
   <!-- =================== INTERACTION SCRIPT =================== -->
   <script>
-    // --- Touch-transform component (like your cube demo) ---
-    // One-finger drag: rotate. Two-finger pinch: scale. Ignores touches on UI elements.
+    // --- Lightweight touch-transform (like your cube demo) applied to modelRig ---
+    // One-finger drag: rotate. Two-finger pinch: scale. Ignores touches on UI.
     AFRAME.registerComponent('touch-transform', {
       schema: {
         rotateFactor: {type: 'number', default: 0.01},
@@ -232,7 +225,8 @@
         this.prevY = 0;
 
         this.pinchStartDist = null;
-        this.startScale = this.el.object3D.scale.x;
+        const s = this.el.object3D.scale;
+        this.startScale = s.x;
 
         this._onTouchStart = this._onTouchStart.bind(this);
         this._onTouchMove  = this._onTouchMove.bind(this);
@@ -251,13 +245,10 @@
         window.removeEventListener('touchcancel',this._onTouchEnd);
       },
 
-      _visible: function () {
-        return this.el.object3D.visible;
-      },
+      _visible: function () { return this.el.object3D.visible; },
 
       _isOnUI: function (target) {
-        // Ignore touches starting on interactive UI elements
-        return target && target.closest && target.closest('.btn, .cta-pill, #closeBtn, #audioOverlay');
+        return target && target.closest && target.closest('.btn, .cta-pill, #closeBtn, #audioOverlay, #resetModelBtn_p2');
       },
 
       _onTouchStart: function (e) {
@@ -302,7 +293,6 @@
           rot.y += dx * this.data.rotateFactor;
           rot.x += dy * this.data.rotateFactor;
 
-          // Clamp pitch between -90° and +90°
           const maxX = Math.PI / 2;
           const minX = -Math.PI / 2;
           if (rot.x > maxX) rot.x = maxX;
@@ -330,19 +320,14 @@
       }
     });
 
-    // Attach the component to the model (after A-Frame parsed the DOM)
-    document.addEventListener('DOMContentLoaded', () => {
-      const modelEntity = document.getElementById('modelEntity');
-      modelEntity.setAttribute('touch-transform', 'minScale:0.2; maxScale:3; rotateFactor:0.01');
-    });
-
-    // --- Page logic (buttons, media, targets) ---
     window.onload = () => {
       // Elements
       const video = document.querySelector('#videoAsset');
       const arVideo = document.querySelector('#arVideo');
       const voice = document.querySelector('#voiceAsset');
-      const model = document.querySelector('#modelEntity');
+
+      const modelRig = document.querySelector('#modelRig');
+      const modelEntity = document.querySelector('#modelEntity');
 
       const targetP1 = document.querySelector('#targetP1');
       const targetP2 = document.querySelector('#targetP2');
@@ -362,12 +347,33 @@
       const closeBtn = document.getElementById('closeBtn');
       const audioOverlay = document.getElementById('audioOverlay');
 
+      // Apply touch-transform to the RIG (we rotate/scale this)
+      if (!modelRig.components['touch-transform']) {
+        modelRig.setAttribute('touch-transform', 'minScale:0.2; maxScale:3; rotateFactor:0.01');
+      }
+
+      // Center the model pivot so rotation is from middle, not the base
+      modelEntity.addEventListener('model-loaded', (e) => {
+        const THREE = AFRAME.THREE;
+        const obj = e.detail.model || modelEntity.getObject3D('mesh');
+        if (!obj) return;
+
+        // Compute bounding box center and size
+        const box = new THREE.Box3().setFromObject(obj);
+        const center = new THREE.Vector3();
+        const size = new THREE.Vector3();
+        box.getCenter(center);
+        box.getSize(size);
+
+        // Move the mesh so that its center sits on the rig origin
+        obj.position.sub(center);
+
+        // Optional: adjust rig slightly if needed (already set -0.05 Y in markup)
+        // modelRig.object3D.position.y = -0.05; // tweak live if needed
+      });
+
       // Track which poster is active
       let active = null;
-
-      // Default model transform for reset
-      const defaultScale = {x: 0.7, y: 0.7, z: 0.7};
-      const defaultRot   = {x: 0, y: 0, z: 0};
 
       // Helpers
       const show = el => el.classList.remove('hidden');
@@ -398,29 +404,32 @@
       // ===================== Poster 1 (Video) =====================
       targetP1.addEventListener('targetFound', () => {
         active = 'p1';
-        // Stop P2 audio if switching fast
+        // stop P2
         voice.pause();
         voice.currentTime = 0;
 
         arVideo.setAttribute('visible', true);
 
-        // Do NOT auto-play. Show CTA first.
         show(playCTA);
         hide(playBtnP1);
 
         show(closeBtn);
-        // Hide P2 UI
-        hide(tellCTA); hide(playBtnP2); hide(resetBtnP2);
+        hide(tellCTA); hide(playBtnP2); // leave reset out on P1
+        hide(resetBtnP2);
       });
 
       targetP1.addEventListener('targetLost', () => {
         video.pause();
         arVideo.setAttribute('visible', false);
-        hide(playCTA); hide(playBtnP1); hide(closeBtn);
+
+        hide(playCTA);
+        hide(playBtnP1);
+        hide(closeBtn);
+
         active = null;
       });
 
-      // Play video CTA
+      // P1: CTA → play
       playCTA.addEventListener('click', () => {
         video.play().then(() => {
           hide(playCTA);
@@ -429,47 +438,42 @@
         }).catch(()=>{});
       });
 
-      // P1 play/pause
+      // P1: play/pause
       playBtnP1.addEventListener('click', () => {
         if (video.paused) video.play().catch(()=>{}); else video.pause();
         updateP1();
       });
 
       // ===================== Poster 2 (Model + Voiceover) =====================
-      // Attach the touch-transform to the model entity if not already
-      if (!model.components['touch-transform']) {
-        model.setAttribute('touch-transform', 'minScale:0.2; maxScale:3; rotateFactor:0.01');
-      }
-
       targetP2.addEventListener('targetFound', () => {
         active = 'p2';
-        // Stop P1 if switching fast
+        // stop P1
         video.pause();
 
-        model.setAttribute('visible', true);
+        modelRig.setAttribute('visible', true);
 
-        // Show CTA first, hide P2 play/pause
+        // Show CTA; hide play/pause until user opts in
         show(tellCTA);
         hide(playBtnP2);
 
-        // Show reset model button for Poster 2
+        // Show Reset Model (now TOP-LEFT)
         show(resetBtnP2);
 
         show(closeBtn);
-        // Hide P1 UI
         hide(playCTA); hide(playBtnP1);
       });
 
       targetP2.addEventListener('targetLost', () => {
         voice.pause();
         voice.currentTime = 0;
-        model.setAttribute('visible', false);
+
+        modelRig.setAttribute('visible', false);
 
         hide(tellCTA); hide(playBtnP2); hide(resetBtnP2); hide(closeBtn);
         active = null;
       });
 
-      // Tell me more → start voiceover
+      // P2: Tell me more → play voiceover
       tellCTA.addEventListener('click', () => {
         voice.play().then(() => {
           hide(tellCTA);
@@ -478,19 +482,22 @@
         }).catch(()=>{});
       });
 
-      // P2 play/pause
+      // P2: play/pause voiceover
       playBtnP2.addEventListener('click', () => {
         if (voice.paused) voice.play().catch(()=>{}); else voice.pause();
         updateP2();
       });
 
-      // Reset model (scale + rotation)
+      // P2: Reset model (resets RIG transforms)
+      const defaultRigScale = modelRig.object3D.scale.clone();
+      const defaultRigRot = modelRig.object3D.rotation.clone();
+
       resetBtnP2.addEventListener('click', () => {
-        model.object3D.scale.set(defaultScale.x, defaultScale.y, defaultScale.z);
-        model.object3D.rotation.set(defaultRot.x, defaultRot.y, defaultRot.z);
+        modelRig.object3D.scale.copy(defaultRigScale);
+        modelRig.object3D.rotation.set(defaultRigRot.x, defaultRigRot.y, defaultRigRot.z);
       });
 
-      // Close
+      // Close (context-aware)
       closeBtn.addEventListener('click', () => {
         if (active === 'p1') {
           video.pause();
@@ -501,21 +508,25 @@
         if (active === 'p2') {
           voice.pause();
           voice.currentTime = 0;
-          model.setAttribute('visible', false);
+          modelRig.setAttribute('visible', false);
           hide(tellCTA); hide(playBtnP2); hide(resetBtnP2);
         }
         hide(closeBtn);
         active = null;
       });
 
-      // Init
+      // Init UI state
       hide(playCTA); hide(playBtnP1);
-      hide(playBtnP2); hide(tellCTA); hide(resetBtnP2);
-      hide(closeBtn);
+      hide(playBtnP2); hide(tellCTA); hide(closeBtn);
+      // IMPORTANT: we want reset to be hidden by default until Poster 2 is active
+      hide(resetBtnP2);
+
       updateP1(); updateP2();
 
-      // Attach the component attribute to the model in DOM (so it’s visible in Inspector too)
-      model.setAttribute('touch-transform', 'minScale:0.2; maxScale:3; rotateFactor:0.01');
+      // Attach the transform component (in case DOMContentLoaded timing differs)
+      if (!modelRig.components['touch-transform']) {
+        modelRig.setAttribute('touch-transform', 'minScale:0.2; maxScale:3; rotateFactor:0.01');
+      }
     };
   </script>
 
