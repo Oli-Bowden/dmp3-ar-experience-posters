@@ -8,12 +8,10 @@
   <!-- A-Frame + MindAR -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-  <!-- HDRI / Environment component for PBR reflections -->
   <script src="https://cdn.jsdelivr.net/npm/aframe-environment-component/dist/aframe-environment-component.min.js"></script>
 
   <style>
     body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
-
     canvas.a-canvas, .a-canvas { touch-action: none !important; }
 
     .btn {
@@ -35,8 +33,8 @@
       touch-action: manipulation;
       pointer-events: auto;
     }
-    .btn:active { transform: scale(0.96); }
     .btn svg { width: 34px; height: 34px; fill: white; }
+    .btn:active { transform: scale(0.96); }
 
     .cta-pill {
       position: fixed;
@@ -119,43 +117,34 @@
 
 <body>
 
-  <!-- =================== AR SCENE =================== -->
   <a-scene
     mindar-image="imageTargetSrc: ./assets/targets.mind; filterMinCF: 0.0001; filterBeta: 0.001;"
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: true">
 
     <a-assets>
-
-      <!-- Poster 1 video -->
       <video id="videoAsset"
              src="./assets/video.mp4"
              preload="auto"
              playsinline
              crossorigin="anonymous"></video>
 
-      <!-- Poster 2 model -->
       <a-asset-item id="modelAsset"
                     src="./assets/quantum-model-shaded.glb"
                     crossorigin="anonymous"></a-asset-item>
 
-      <!-- Poster 2 voiceover -->
       <audio id="voiceAsset"
              src="./assets/quantum-voiceover.mp3"
              preload="auto"
              crossorigin="anonymous"></audio>
     </a-assets>
 
-    <!-- Basic lights (kept) -->
     <a-entity light="type: ambient; intensity: 1.2"></a-entity>
     <a-entity light="type: directional; intensity: 1.2; position: 0 1 1"></a-entity>
-
-    <!-- HDRI-style environment for PBR reflections (no ground/grid in AR) -->
-    <a-entity environment="preset: dawn; lighting: flat; ground: none; playArea: 0; fog: 0; grid: none; dressing: none"></a-entity>
+    <a-entity environment="preset: dawn; lighting: flat; ground: none; fog: 0; grid: none; dressing: none"></a-entity>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- Poster 1 -->
     <a-entity mindar-image-target="targetIndex: 0" id="targetP1">
       <a-video id="arVideo"
                src="#videoAsset"
@@ -165,7 +154,6 @@
                visible="false"></a-video>
     </a-entity>
 
-    <!-- Poster 2 -->
     <a-entity mindar-image-target="targetIndex: 1" id="targetP2">
       <a-entity id="modelRig"
                 position="0 -0.05 0"
@@ -178,9 +166,6 @@
 
   </a-scene>
 
-  <!-- =================== UI =================== -->
-
-  <!-- Poster 1 -->
   <div id="playVideoCTA_p1" class="cta-pill hidden">Play video</div>
   <div id="restartVideoBtn_p1" class="hidden">Restart video</div>
 
@@ -192,8 +177,6 @@
     </svg>
   </div>
 
-  <!-- Poster 2 -->
-  <div id="showModelCTA_p2" class="cta-pill hidden">Show 3D model</div>
   <div id="tellMeMoreBtn_p2" class="cta-pill hidden">Tell me more</div>
 
   <div id="togglePlayPauseBtn_p2" class="btn hidden">
@@ -207,12 +190,9 @@
   <div id="resetModelBtn_p2" class="hidden">Reset model</div>
 
   <div id="closeBtn" class="hidden">✕</div>
-
   <div id="audioOverlay">Tap to Enable Sound</div>
 
-  <!-- =================== SCRIPT =================== -->
   <script>
-    /* TOUCH TRANSFORM FOR MODEL */
     AFRAME.registerComponent('touch-transform', {
       schema:{rotateFactor:{default:0.01}, minScale:{default:0.2}, maxScale:{default:3}},
       init(){
@@ -254,7 +234,6 @@
       },
       _move(e){
         if(!this._visible() || this._isUI(e.target)) return;
-
         if(e.touches.length===2 && this.pinchStartDist){
           const d=this._dist(e.touches[0],e.touches[1]);
           let s=this.startScale*(d/this.pinchStartDist);
@@ -262,7 +241,6 @@
           this.el.object3D.scale.set(s,s,s);
           e.preventDefault(); return;
         }
-
         if(this.isDragging && e.touches.length===1){
           const x=e.touches[0].clientX, y=e.touches[0].clientY;
           const dx=x-this.prevX, dy=y-this.prevY;
@@ -292,7 +270,6 @@
 
     window.onload = () => {
 
-      /* ELEMENTS */
       const video=document.querySelector('#videoAsset');
       const arVideo=document.querySelector('#arVideo');
       const voice=document.querySelector('#voiceAsset');
@@ -310,7 +287,6 @@
 
       const restartVideoBtn=document.getElementById('restartVideoBtn_p1');
 
-      const showModelCTA=document.getElementById('showModelCTA_p2');
       const tellCTA=document.getElementById('tellMeMoreBtn_p2');
       const playBtnP2=document.getElementById('togglePlayPauseBtn_p2');
       const iconPlayP2=document.getElementById('iconPlay_p2');
@@ -320,10 +296,8 @@
       const closeBtn=document.getElementById('closeBtn');
       const audioOverlay=document.getElementById('audioOverlay');
 
-      /* ADD GESTURE COMPONENT */
       modelRig.setAttribute('touch-transform','minScale:0.2; maxScale:3; rotateFactor:0.01');
 
-      /* MODEL-LOADING STATE */
       let modelReady=false;
       let pendingShowModel=false;
 
@@ -336,7 +310,6 @@
           box.getCenter(center);
           obj.position.sub(center);
         }
-
         modelReady=true;
         if(pendingShowModel){
           modelRig.setAttribute('visible',true);
@@ -350,7 +323,6 @@
 
       let active=null;
 
-      /* RESET DEFAULTS */
       let defaultRigScale=null, defaultRigRot=null;
 
       const show=el=>el.classList.remove('hidden');
@@ -367,7 +339,6 @@
         iconPauseP2.style.display=paused?'none':'block';
       }
 
-      /* AUDIO UNLOCK */
       audioOverlay.addEventListener('click',()=>{
         video.muted=false;
         voice.muted=false;
@@ -376,7 +347,6 @@
         audioOverlay.style.display='none';
       });
 
-      /* POSTER 1 */
       targetP1.addEventListener('targetFound',()=>{
         active='p1';
         voice.pause(); voice.currentTime=0;
@@ -388,7 +358,7 @@
         show(restartVideoBtn);
         show(closeBtn);
 
-        hide(showModelCTA); hide(tellCTA); hide(playBtnP2); hide(resetBtnP2);
+        hide(tellCTA); hide(playBtnP2); hide(resetBtnP2);
       });
 
       targetP1.addEventListener('targetLost',()=>{
@@ -422,18 +392,20 @@
         updateP1();
       });
 
-      /* POSTER 2 */
       targetP2.addEventListener('targetFound',()=>{
         active='p2';
         video.pause();
 
-        modelRig.setAttribute('visible',false);
+        if(modelReady){
+          modelRig.setAttribute('visible',true);
+        } else {
+          pendingShowModel=true;
+        }
 
         defaultRigScale=modelRig.object3D.scale.clone();
         defaultRigRot=modelRig.object3D.rotation.clone();
 
-        show(showModelCTA);
-        hide(tellCTA);
+        show(tellCTA);
         hide(playBtnP2);
 
         show(resetBtnP2);
@@ -449,26 +421,12 @@
         modelRig.setAttribute('visible',false);
         pendingShowModel=false;
 
-        hide(showModelCTA); hide(tellCTA); hide(playBtnP2); hide(resetBtnP2);
+        hide(tellCTA); hide(playBtnP2); hide(resetBtnP2);
         hide(closeBtn);
 
         active=null;
       });
 
-      /* Show 3D model */
-      showModelCTA.addEventListener('click',()=>{
-        hide(showModelCTA);
-
-        if(modelReady){
-          modelRig.setAttribute('visible',true);
-        } else {
-          pendingShowModel=true;
-        }
-
-        show(tellCTA);
-      });
-
-      /* Tell me more */
       tellCTA.addEventListener('click',()=>{
         voice.play().then(()=>{
           hide(tellCTA);
@@ -496,15 +454,14 @@
         if(active==='p2'){
           voice.pause(); voice.currentTime=0;
           modelRig.setAttribute('visible',false);
-          hide(showModelCTA); hide(tellCTA); hide(playBtnP2); hide(resetBtnP2);
+          hide(tellCTA); hide(playBtnP2); hide(resetBtnP2);
         }
         hide(closeBtn);
         active=null;
       });
 
-      /* INIT */
       hide(playCTA); hide(playBtnP1); hide(restartVideoBtn);
-      hide(showModelCTA); hide(tellCTA); hide(playBtnP2); hide(resetBtnP2);
+      hide(tellCTA); hide(playBtnP2); hide(resetBtnP2);
       hide(closeBtn);
     };
   </script>
