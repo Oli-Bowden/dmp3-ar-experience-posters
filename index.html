@@ -157,11 +157,12 @@
     <!-- Poster 2 (index 1) -->
     <a-entity mindar-image-target="targetIndex: 1" id="targetP2">
       <!-- RIG receives user transforms (rotate/scale) -->
-      <a-entity id="modelRig"
-                position="0 -0.05 0"  <!-- lower the model slightly if it feels high; tweak this -->
-                rotation="0 0 0"
-                scale="0.7 0.7 0.7"
-                visible="false">
+      <!-- lower the model slightly if it feels high; tweak this -->
+<a-entity id="modelRig"
+          position="0 -0.05 0"
+          rotation="0 0 0"
+          scale="0.7 0.7 0.7"
+          visible="false">
         <!-- Child is the actual GLB; we’ll recenter its pivot on model-loaded -->
         <a-entity id="modelEntity" gltf-model="#modelAsset"></a-entity>
       </a-entity>
